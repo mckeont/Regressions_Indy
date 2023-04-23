@@ -1,0 +1,250 @@
+---
+title: "Indy Regression"
+output: html_document
+date: "2023-04-23"
+---
+
+```{r}
+#Load Libraries
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(stringr)
+library(ggfortify)
+```
+
+```{r}
+## Loading data.
+income<- read.csv("C:/Users/ureka/OneDrive/Documents/Stata 2022/Danicia_stats/COMPLETE_income50_75k.csv", header = TRUE)
+poverty<- read.csv("C:/Users/ureka/OneDrive/Documents/Stata 2022/Danicia_stats/COMPLETE_povertytable.csv", header = TRUE)
+homeown<- read.csv("C:/Users/ureka/OneDrive/Documents/Stata 2022/Danicia_stats/COMPLETE_homeowner_occupied.csv", header = TRUE)
+foodstamps<- read.csv("C:/Users/ureka/OneDrive/Documents/Stata 2022/Danicia_stats/COMPLETE_percentfoodstamps.csv", header = TRUE)
+mobility<- read.csv("C:/Users/ureka/OneDrive/Documents/Stata 2022/Danicia_stats/mobility.csv", header = TRUE)
+insurance<- read.csv("C:/Users/ureka/OneDrive/Documents/Stata 2022/Danicia_stats/healthinsurance.csv", header = TRUE)
+crimes<- read.csv("C:/Users/ureka/OneDrive/Documents/Stata 2022/Danicia_stats/crimestable.csv", header = TRUE)
+artcount<- read.csv("C:/Users/ureka/OneDrive/Documents/Stata 2022/Danicia_stats/Indyarts_censuscount.csv", header = TRUE)
+walk<- read.csv("C:/Users/ureka/OneDrive/Documents/Stata 2022/Danicia_stats/walk.csv", header = TRUE)
+
+# Aggregate by GEO_ID and calculate the mean of walkability
+walk <- aggregate(walkability ~ GEO_ID, data = walk, mean)
+
+load("C:/Users/ureka/OneDrive/Documents/Stata 2022/Danicia_stats/ICPSR_38586-V1/ICPSR_38586/DS0001/38586-0001-Data.rda")
+parks<- da38586.0001
+parks$TRACT_FIPS10 <- paste0("1400000US", as.character(parks$TRACT_FIPS10))
+parks$GEO_ID <- parks$TRACT_FIPS10 
+```
+
+```{r}
+## Merge each table one at a time. Each iteration only keeps observations that exist in BOTH tables, 
+## while excluding those that only exist in one. 
+merged_table <- merge(income, poverty, by = "GEO_ID")
+merged_table <- merge(merged_table, homeown, by = "GEO_ID")
+merged_table <- merge(merged_table, foodstamps, by = "GEO_ID")
+merged_table <- merge(merged_table, mobility, by = "GEO_ID")
+merged_table <- merge(merged_table, insurance, by = "GEO_ID")
+merged_table <- merge(merged_table, artcount, by = "GEO_ID")
+merged_table <- merge(merged_table, parks, by = "GEO_ID")
+merged_table <- merge(merged_table, walk, by = "GEO_ID")
+merged_table <- merge(merged_table, crimes, by = "GEO_ID")
+
+wbindex <- merged_table 
+
+wbindex$percentPoverty <- as.numeric(wbindex$percentPoverty)
+wbindex$income <- as.numeric(wbindex$income)
+wbindex$owneroccupied  <- as.numeric(wbindex$owneroccupied)
+wbindex$foodstamps <- as.numeric(wbindex$foodstamps)
+wbindex$mobility <- as.numeric(wbindex$mobility)
+wbindex$healthinsurance <- as.numeric(wbindex$healthinsurance)
+
+```
+
+```{r}
+## Creating outcome variable
+wbindex$index <- ((wbindex$income) + (wbindex$percentPoverty) + (wbindex$owneroccupied) + (wbindex$foodstamps))/ 4
+
+wbindex <- wbindex[, c("GEO_ID", "index", "income", "percentPoverty",
+                       "owneroccupied", "foodstamps", "healthinsurance",
+                       "artcount", "mobility", "crimes", "walkability", "TOT_PARK_AREA_SQMILES")]
+colnames(wbindex)
+```
+
+```{r}
+model <- lm(index ~ artcount, data = wbindex)
+
+plot(model)
+# View summary of the model with R-squared value included
+rsq <- summary(model)$r.squared
+summary_text <- paste0("R-squared: ", round(rsq, 2))
+summary(model)
+mtext(summary_text, side = 1, line = -2)
+
+# Check model assumptions and residuals in a grid of plots
+par(mfrow = c(2, 2))
+plot(model)
+```
+
+```{r}
+model <- lm(index ~ mobility, data = wbindex)
+
+plot(model)
+# View summary of the model with R-squared value included
+rsq <- summary(model)$r.squared
+summary_text <- paste0("R-squared: ", round(rsq, 2))
+summary(model)
+mtext(summary_text, side = 1, line = -2)
+
+# Check model assumptions and residuals in a grid of plots
+par(mfrow = c(2, 2))
+plot(model)
+```
+
+
+```{r}
+
+## Linear regression
+model <- lm(index ~ crimes, data = wbindex)
+
+plot(model)
+# View summary of the model with R-squared value included
+rsq <- summary(model)$r.squared
+summary_text <- paste0("R-squared: ", round(rsq, 2))
+summary(model)
+mtext(summary_text, side = 1, line = -2)
+
+# Check model assumptions and residuals in a grid of plots
+par(mfrow = c(2, 2))
+plot(model)
+
+```
+
+```{r}
+
+## Linear regression
+model <- lm(index ~ healthinsurance, data = wbindex)
+
+plot(model)
+# View summary of the model with R-squared value included
+rsq <- summary(model)$r.squared
+summary_text <- paste0("R-squared: ", round(rsq, 2))
+summary(model)
+mtext(summary_text, side = 1, line = -2)
+
+# Check model assumptions and residuals in a grid of plots
+par(mfrow = c(2, 2))
+plot(model)
+
+```
+
+```{r}
+
+## Linear regression
+model <- lm(index ~ walkability, data = wbindex)
+
+plot(model)
+# View summary of the model with R-squared value included
+rsq <- summary(model)$r.squared
+summary_text <- paste0("R-squared: ", round(rsq, 2))
+summary(model)
+mtext(summary_text, side = 1, line = -2)
+
+# Check model assumptions and residuals in a grid of plots
+par(mfrow = c(2, 2))
+plot(model)
+
+```
+
+```{r}
+## Linear regression
+model <- lm(index ~ TOT_PARK_AREA_SQMILES, data = wbindex)
+
+plot(model)
+# View summary of the model with R-squared value included
+rsq <- summary(model)$r.squared
+summary_text <- paste0("R-squared: ", round(rsq, 2))
+summary(model)
+mtext(summary_text, side = 1, line = -2)
+
+# Check model assumptions and residuals in a grid of plots
+par(mfrow = c(2, 2))
+plot(model)
+
+```
+
+```{r}
+
+## Linear regression
+model <- lm(index ~ artcount + mobility + healthinsurance + walkability, data = wbindex)
+
+plot(model)
+# View summary of the model with R-squared value included
+rsq <- summary(model)$r.squared
+summary_text <- paste0("R-squared: ", round(rsq, 2))
+summary(model)
+mtext(summary_text, side = 1, line = -2)
+
+# Check model assumptions and residuals in a grid of plots
+par(mfrow = c(2, 2))
+plot(model)
+
+```
+
+```{r}
+
+## Linear regression
+model <- lm(index ~ artcount + mobility + crimes, data = wbindex)
+
+plot(model)
+# View summary of the model with R-squared value included
+rsq <- summary(model)$r.squared
+summary_text <- paste0("R-squared: ", round(rsq, 2))
+summary(model)
+mtext(summary_text, side = 1, line = -2)
+
+# Check model assumptions and residuals in a grid of plots
+par(mfrow = c(2, 2))
+plot(model)
+
+```
+
+```{r}
+
+## Linear regression
+model <- lm(index ~ artcount + mobility + crimes + healthinsurance + walkability + TOT_PARK_AREA_SQMILES, data = wbindex)
+
+plot(model)
+# View summary of the model with R-squared value included
+rsq <- summary(model)$r.squared
+summary_text <- paste0("R-squared: ", round(rsq, 2))
+summary(model)
+mtext(summary_text, side = 1, line = -2)
+
+# Check model assumptions and residuals in a grid of plots
+par(mfrow = c(2, 2))
+plot(model)
+
+```
+
+
+
+```{r}
+
+# Check model assumptions
+
+# Check for normality of residuals
+qqnorm(model$residuals, main = "Normal Q-Q Plot")
+qqline(model$residuals)
+
+# Check for homoscedasticity (equal variance)
+plot(model$fitted.values, model$residuals, main = "Residuals vs. Fitted Values")
+abline(h = 0, col = "red")
+
+# Check for linearity
+plot(wbindex$walkability, model$residuals, main = "Residuals vs. Walkability")
+abline(h = 0, col = "red")
+
+# Check for influential observations
+plot(model, which = 4)
+
+wbindex
+
+```
