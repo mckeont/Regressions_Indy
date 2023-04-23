@@ -1,6 +1,7 @@
 # Linear Regressions with Danicia and Tom
 ## Severe thunderstorm watch edition
 ### Earth Day 4/22/2023 Evening.
+#### Author: Tom McKeon, MPH
 
 #Load Libraries
 library(tidyverse)
